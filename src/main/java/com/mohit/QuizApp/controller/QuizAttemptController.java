@@ -11,6 +11,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
+
+import com.mohit.QuizApp.dto.QuizDTO;
+import com.mohit.QuizApp.dto.QuestionDTO;
+import com.mohit.QuizApp.dto.QuestionOptionDTO;
+
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -27,10 +32,36 @@ public class QuizAttemptController {
     }
 
     // ✅ 1️⃣ Get Available Quizzes
+    // ✅ 1️⃣ Get Available Quizzes Without Infinite Recursion
     @GetMapping
-    public ResponseEntity<List<Quiz>> getQuizzes() {
+    public ResponseEntity<List<QuizDTO>> getQuizzes() {
         List<Quiz> quizzes = quizRepo.findAll();
-        return ResponseEntity.ok(quizzes);
+        List<QuizDTO> quizDTOs = quizzes.stream().map(this::convertToDTO).collect(Collectors.toList());
+        return ResponseEntity.ok(quizDTOs);
+    }
+
+    // ✅ Convert Quiz entity to QuizDTO
+    private QuizDTO convertToDTO(Quiz quiz) {
+        List<QuestionDTO> questionDTOs = quiz.getQuestions().stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+
+        return new QuizDTO(quiz.getId(), quiz.getTitle(), quiz.getTotalMarks(), quiz.getDuration(), questionDTOs);
+    }
+
+    // ✅ Convert Question entity to QuestionDTO
+    private QuestionDTO convertToDTO(Question question) {
+        List<QuestionOptionDTO> optionDTOs = question.getOptions().stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+
+        return new QuestionDTO(question.getId(), question.getQuestionText(), optionDTOs);
+    }
+
+    // ✅ Convert QuestionOption entity to QuestionOptionDTO
+    private QuestionOptionDTO convertToDTO(QuestionOption option) {
+        return new QuestionOptionDTO(option.getId(), option.getOptionText(), option.isCorrect());
+
     }
 
     // ✅ 2️⃣ Start a Quiz
